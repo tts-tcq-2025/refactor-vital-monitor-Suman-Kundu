@@ -1,131 +1,83 @@
+#include "./monitor.h"
 #include <assert.h>
 #include <thread>
 #include <chrono>
 #include <iostream>
-#include <string>
-#include <functional>
+#include <algorithm>
 using std::cout, std::flush, std::this_thread::sleep_for, std::chrono::seconds;
 
-// Enums for better type safety and readability
-enum class VitalStatus {
-    NORMAL = 0,
-    CRITICAL = 1
+static const PulseRateRange pulseRateRanges[] = {
+    {0, 0, 100, 160},    // newborn
+    {1, 5, 80, 140},     // infant/toddler
+    {6, 10, 70, 110},    // child
+    {11, 14, 60, 105},   // adolescent
+    {15, 200, 60, 100}   // adult (assuming max age 200)
 };
 
-enum class VitalType {
-    TEMPERATURE,
-    PULSE_RATE,
-    SPO2
-};
-
-// Struct to encapsulate vital limits (OOP principle)
-struct VitalLimits {
-    float min;
-    float max;
-    std::string name;
-    std::string unit;
-};
-
-// Pure functions for vital validation (Functional paradigm) - reduced complexity
-VitalStatus checkTemperature(float temperature) {
-    return checkVitalRange(temperature, 95.0f, 102.0f);
+bool isTemperatureOk(float temperature) {
+    return temperature >= 95 && temperature <= 102;
 }
 
-VitalStatus checkPulseRate(float pulseRate) {
-    return checkVitalRange(pulseRate, 60.0f, 100.0f);
+bool ageInRange(int age, const PulseRateRange& range) {
+    return age >= range.minAge && age <= range.maxAge;
 }
 
-VitalStatus checkSpo2(float spo2) {
-    return (spo2 < 90) ? VitalStatus::CRITICAL : VitalStatus::NORMAL;
+const PulseRateRange* findPulseRangeForAge(int age) {
+    const auto* end = pulseRateRanges +
+                      sizeof(pulseRateRanges) / sizeof(pulseRateRanges[0]);
+    const auto* result = std::find_if(pulseRateRanges, end,
+                                      [age](const PulseRateRange& range) {
+                                          return ageInRange(age, range);
+                                      });
+    return result != end ? result : nullptr;
 }
 
-// Generic vital checker using functional approach
-VitalStatus checkVitalRange(float value, float min, float max) {
-    return (value < min || value > max) ? VitalStatus::CRITICAL : VitalStatus::NORMAL;
+bool isPulseRateOk(float pulseRate, int age) {
+    const PulseRateRange* range = findPulseRangeForAge(age);
+    return range && pulseRate >= range->minPulse &&
+           pulseRate <= range->maxPulse;
 }
 
-// Separated I/O concern - pure alert function
-void displayAlert(const std::string& message) {
+bool isSpO2Ok(float spo2) {
+    return spo2 >= 90;
+}
+
+void printAlert(const char* message) {
     cout << message << "\n";
-}
-
-// Helper function for single animation step
-void animateStep(const std::string& pattern) {
-    cout << "\r" << pattern << flush;
-    sleep_for(seconds(1));
-}
-
-// Separated I/O concern - visual alert animation - reduced complexity
-void showVisualAlert() {
     for (int i = 0; i < 6; i++) {
-        animateStep("* ");
-        animateStep(" *");
+        cout << "\r* " << flush;
+        sleep_for(seconds(1));
+        cout << "\r *" << flush;
+        sleep_for(seconds(1));
     }
 }
 
-// Aspect-oriented approach: Alert handler that can be reused
-void handleCriticalVital(const std::string& vitalName) {
-    displayAlert(vitalName + " is critical!");
-    showVisualAlert();
+VitalChecks checkAllVitals(float temperature, float pulseRate, float spo2,
+                           int age) {
+    VitalChecks checks;
+    checks.temperature = isTemperatureOk(temperature);
+    checks.pulseRate = isPulseRateOk(pulseRate, age);
+    checks.spo2 = isSpO2Ok(spo2);
+    return checks;
 }
 
-// Class-based approach for encapsulating vital monitoring (OOP)
-class VitalMonitor {
-private:
-    VitalLimits temperatureLimits = {95.0f, 102.0f, "Temperature", "°F"};
-    VitalLimits pulseRateLimits = {60.0f, 100.0f, "Pulse Rate", "BPM"};
-    VitalLimits spo2Limits = {90.0f, 100.0f, "Oxygen Saturation", "%"};
+int handleVitalAlert(bool isOk, const char* message) {
+    if (!isOk) {
+        printAlert(message);
+        return 0;
+    }
+    return 1;
+}
 
-public:
-    // Pure function for checking individual vitals
-    VitalStatus checkVital(float value, const VitalLimits& limits) {
-        return checkVitalRange(value, limits.min, limits.max);
-    }
-    
-private:
-    // Helper function to get limits by type - reduced complexity
-    const VitalLimits& getLimitsByType(VitalType type) {
-        static const VitalLimits* limitsMap[] = {
-            &temperatureLimits,  // TEMPERATURE
-            &pulseRateLimits,    // PULSE_RATE
-            &spo2Limits          // SPO2
-        };
-        return *limitsMap[static_cast<int>(type)];
-    }
+int vitalsOk(float temperature, float pulseRate, float spo2, int age) {
+    VitalChecks checks = checkAllVitals(temperature, pulseRate, spo2, age);
 
-    // Helper function to check a single vital and handle critical state
-    bool checkSingleVital(float value, const VitalLimits& limits) {
-        if (checkVital(value, limits) == VitalStatus::CRITICAL) {
-            handleCriticalVital(limits.name);
-            return false;
-        }
-        return true;
-    }
+    int result = handleVitalAlert(checks.temperature,
+                                  "Temperature is critical!");
+    if (result == 0) return 0;
 
-public:
-    // Procedural approach for sequence of checks - reduced complexity
-    bool checkAllVitals(float temperature, float pulseRate, float spo2) {
-        return checkSingleVital(temperature, temperatureLimits) &&
-               checkSingleVital(pulseRate, pulseRateLimits) &&
-               checkSingleVital(spo2, spo2Limits);
-    }
-    
-    // Future-proof: Easy to add new vitals
-    void addVitalCheck(float value, const VitalLimits& limits) {
-        if (checkVital(value, limits) == VitalStatus::CRITICAL) {
-            handleCriticalVital(limits.name);
-        }
-    }
-    
-    // Age-based limits (future enhancement ready) - reduced complexity
-    VitalLimits getAgeAdjustedLimits(VitalType type, int age) {
-        // Placeholder for age-based adjustments
-        return getLimitsByType(type);
-    }
-};
+    result = handleVitalAlert(checks.pulseRate, "Pulse Rate is out of range!");
+    if (result == 0) return 0;
 
-// Legacy function wrapper for backward compatibility
-int vitalsOk(float temperature, float pulseRate, float spo2) {
-    VitalMonitor monitor;
-    return monitor.checkAllVitals(temperature, pulseRate, spo2) ? 1 : 0;
+    return handleVitalAlert(checks.spo2, "Oxygen Saturation out of range!");
 }
