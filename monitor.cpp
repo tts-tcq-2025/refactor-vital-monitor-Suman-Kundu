@@ -26,13 +26,13 @@ struct VitalLimits {
     std::string unit;
 };
 
-// Pure functions for vital validation (Functional paradigm)
+// Pure functions for vital validation (Functional paradigm) - reduced complexity
 VitalStatus checkTemperature(float temperature) {
-    return (temperature > 102 || temperature < 95) ? VitalStatus::CRITICAL : VitalStatus::NORMAL;
+    return checkVitalRange(temperature, 95.0f, 102.0f);
 }
 
 VitalStatus checkPulseRate(float pulseRate) {
-    return (pulseRate < 60 || pulseRate > 100) ? VitalStatus::CRITICAL : VitalStatus::NORMAL;
+    return checkVitalRange(pulseRate, 60.0f, 100.0f);
 }
 
 VitalStatus checkSpo2(float spo2) {
@@ -49,13 +49,17 @@ void displayAlert(const std::string& message) {
     cout << message << "\n";
 }
 
-// Separated I/O concern - visual alert animation
+// Helper function for single animation step
+void animateStep(const std::string& pattern) {
+    cout << "\r" << pattern << flush;
+    sleep_for(seconds(1));
+}
+
+// Separated I/O concern - visual alert animation - reduced complexity
 void showVisualAlert() {
     for (int i = 0; i < 6; i++) {
-        cout << "\r* " << flush;
-        sleep_for(seconds(1));
-        cout << "\r *" << flush;
-        sleep_for(seconds(1));
+        animateStep("* ");
+        animateStep(" *");
     }
 }
 
@@ -78,27 +82,32 @@ public:
         return checkVitalRange(value, limits.min, limits.max);
     }
     
-    // Procedural approach for sequence of checks
-    bool checkAllVitals(float temperature, float pulseRate, float spo2) {
-        // Check temperature
-        if (checkVital(temperature, temperatureLimits) == VitalStatus::CRITICAL) {
-            handleCriticalVital(temperatureLimits.name);
+private:
+    // Helper function to get limits by type - reduced complexity
+    const VitalLimits& getLimitsByType(VitalType type) {
+        static const VitalLimits* limitsMap[] = {
+            &temperatureLimits,  // TEMPERATURE
+            &pulseRateLimits,    // PULSE_RATE
+            &spo2Limits          // SPO2
+        };
+        return *limitsMap[static_cast<int>(type)];
+    }
+
+    // Helper function to check a single vital and handle critical state
+    bool checkSingleVital(float value, const VitalLimits& limits) {
+        if (checkVital(value, limits) == VitalStatus::CRITICAL) {
+            handleCriticalVital(limits.name);
             return false;
         }
-        
-        // Check pulse rate
-        if (checkVital(pulseRate, pulseRateLimits) == VitalStatus::CRITICAL) {
-            handleCriticalVital(pulseRateLimits.name);
-            return false;
-        }
-        
-        // Check SpO2
-        if (checkVital(spo2, spo2Limits) == VitalStatus::CRITICAL) {
-            handleCriticalVital(spo2Limits.name);
-            return false;
-        }
-        
         return true;
+    }
+
+public:
+    // Procedural approach for sequence of checks - reduced complexity
+    bool checkAllVitals(float temperature, float pulseRate, float spo2) {
+        return checkSingleVital(temperature, temperatureLimits) &&
+               checkSingleVital(pulseRate, pulseRateLimits) &&
+               checkSingleVital(spo2, spo2Limits);
     }
     
     // Future-proof: Easy to add new vitals
@@ -108,15 +117,10 @@ public:
         }
     }
     
-    // Age-based limits (future enhancement ready)
+    // Age-based limits (future enhancement ready) - reduced complexity
     VitalLimits getAgeAdjustedLimits(VitalType type, int age) {
         // Placeholder for age-based adjustments
-        switch(type) {
-            case VitalType::TEMPERATURE: return temperatureLimits;
-            case VitalType::PULSE_RATE: return pulseRateLimits;
-            case VitalType::SPO2: return spo2Limits;
-        }
-        return temperatureLimits;
+        return getLimitsByType(type);
     }
 };
 
