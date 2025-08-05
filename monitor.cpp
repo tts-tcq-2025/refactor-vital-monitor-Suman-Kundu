@@ -85,7 +85,7 @@ public:
         
         return true;
     }
-    
+};   
     // Future-proof: Easy to add new vitals
     void addVitalCheck(float value, const VitalLimits& limits) {
         if (checkVital(value, limits) == VitalStatus::CRITICAL) {
