@@ -92,17 +92,7 @@ public:
             handleCriticalVital(limits.name);
         }
     }
-    
-    // Age-based limits (future enhancement ready) - REDUCED COMPLEXITY (was 4, now 1)
-    VitalLimits getAgeAdjustedLimits(VitalType type, int age) {
-        // Lookup table approach reduces complexity from 4 to 1
-        static const std::array<const VitalLimits*, 3> limitsLookup = {{
-            &temperatureLimits,  // VitalType::TEMPERATURE (index 0)
-            &pulseRateLimits,    // VitalType::PULSE_RATE (index 1)
-            &spo2Limits          // VitalType::SPO2 (index 2)
-        }};
-        
-        // Future enhancement: age-based adjustments can be added here
+         // Future enhancement: age-based adjustments can be added here
         // For now, return the standard limits
         int index = static_cast<int>(type);
         return (index >= 0 && index < 3) ? *limitsLookup[index] : temperatureLimits;
