@@ -92,12 +92,6 @@ public:
             handleCriticalVital(limits.name);
         }
     }
-         // Future enhancement: age-based adjustments can be added here
-        // For now, return the standard limits
-        int index = static_cast<int>(type);
-        return (index >= 0 && index < 3) ? *limitsLookup[index] : temperatureLimits;
-    }
-};
 
 // Legacy function wrapper for backward compatibility
 int vitalsOk(float temperature, float pulseRate, float spo2) {
