@@ -1,8 +1,8 @@
 #include "./Print_console.h"
-#include <iostream>
-#include <thread>
 #include <chrono>
+#include <iostream>
 #include <string>
+#include <thread>
 using std::cout, std::flush, std::this_thread::sleep_for, std::chrono::seconds;
 
 // Separated I/O concern - pure alert function
