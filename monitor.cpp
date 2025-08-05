@@ -1,12 +1,12 @@
 #include "./monitor.h"
-#include "./Print_console.h"
 #include <assert.h>
-#include <thread>
+#include <array>
 #include <chrono>
+#include <functional>
 #include <iostream>
 #include <string>
-#include <functional>
-#include <array>
+#include <thread>
+#include "./Print_console.h"
 using std::cout, std::flush, std::this_thread::sleep_for, std::chrono::seconds;
 
 // Enums for better type safety and readability
@@ -50,17 +50,17 @@ VitalStatus checkVitalRange(float value, float min, float max) {
 
 // Class-based approach for encapsulating vital monitoring (OOP)
 class VitalMonitor {
-private:
+ private:
     VitalLimits temperatureLimits = {95.0f, 102.0f, "Temperature", "°F"};
     VitalLimits pulseRateLimits = {60.0f, 100.0f, "Pulse Rate", "BPM"};
     VitalLimits spo2Limits = {90.0f, 100.0f, "Oxygen Saturation", "%"};
 
-public:
+ public:
     // Pure function for checking individual vitals
     VitalStatus checkVital(float value, const VitalLimits& limits) {
         return checkVitalRange(value, limits.min, limits.max);
     }
-    
+
     // Procedural approach for sequence of checks - REDUCED COMPLEXITY (was 4, now 2)
     bool checkAllVitals(float temperature, float pulseRate, float spo2) {
         // Array of vital values and their corresponding limits for loop-based processing
@@ -68,13 +68,13 @@ public:
             float value;
             const VitalLimits* limits;
         };
-        
+
         std::array<VitalCheck, 3> vitalsToCheck = {{
             {temperature, &temperatureLimits},
             {pulseRate, &pulseRateLimits},
             {spo2, &spo2Limits}
         }};
-        
+
         // Single loop reduces complexity from 4 to 2
         for (const auto& vital : vitalsToCheck) {
             if (checkVital(vital.value, *vital.limits) == VitalStatus::CRITICAL) {
@@ -82,10 +82,10 @@ public:
                 return false;
             }
         }
-        
+
         return true;
     }
-   
+
     // Future-proof: Easy to add new vitals
     void addVitalCheck(float value, const VitalLimits& limits) {
         if (checkVital(value, limits) == VitalStatus::CRITICAL) {
@@ -93,6 +93,7 @@ public:
         }
     }
 };
+
 // Legacy function wrapper for backward compatibility
 int vitalsOk(float temperature, float pulseRate, float spo2) {
     VitalMonitor monitor;
