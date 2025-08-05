@@ -30,8 +30,7 @@ struct VitalLimits {
 
 // Generic vital checker using functional approach
 VitalStatus checkVitalRange(float value, float min, float max) {
-    return (value < min || value > max) ? 
-           VitalStatus::CRITICAL : VitalStatus::NORMAL;
+    return (value < min || value > max) ? VitalStatus::CRITICAL : VitalStatus::NORMAL;
 }
 
 // Class-based approach for encapsulating vital monitoring (OOP)
@@ -49,8 +48,7 @@ class VitalMonitor {
 
     // Procedural approach for sequence of checks
     bool checkAllVitals(float temperature, float pulseRate, float spo2) {
-        // Array of vital values and their corresponding limits 
-        // for loop-based processing
+        // Array of vital values and their corresponding limits for loop-based processing
         struct VitalCheck {
             float value;
             const VitalLimits* limits;
@@ -65,8 +63,7 @@ class VitalMonitor {
         // Use std::all_of algorithm for better style
         return std::all_of(vitalsToCheck.begin(), vitalsToCheck.end(),
                           [this](const VitalCheck& vital) {
-                              if (checkVital(vital.value, *vital.limits) == 
-                                  VitalStatus::CRITICAL) {
+                              if (checkVital(vital.value, *vital.limits) == VitalStatus::CRITICAL) {
                                   handleCriticalVital(vital.limits->name);
                                   return false;
                               }
