@@ -1,46 +1,79 @@
-#include "monitor.h"
-#include "VitalMonitor.h"
-#include "LanguageManager.h"
+#include "./monitor.h"
+#include <assert.h>
+#include <algorithm>
+#include <array>
+#include <chrono>
+#include <functional>
 #include <iostream>
+#include <string>
+#include <thread>
+#include "./Print_console.h"
 
+// Enums for better type safety and readability
+enum class VitalStatus {
+    NORMAL = 0,
+    CRITICAL = 1
+};
+
+enum class VitalType {
+    TEMPERATURE,
+    PULSE_RATE,
+    SPO2
+};
+
+// Struct to encapsulate vital limits (OOP principle)
+struct VitalLimits {
+    float min;
+    float max;
+    std::string name;
+};
+
+// Generic vital checker using functional approach
+VitalStatus checkVitalRange(float value, float min, float max) {
+    return (value < min || value > max) ? VitalStatus::CRITICAL : VitalStatus::NORMAL;
+}
+
+// Class-based approach for encapsulating vital monitoring (OOP)
+class VitalMonitor {
+ private:
+    VitalLimits temperatureLimits = {95.0f, 102.0f, "Temperature"};
+    VitalLimits pulseRateLimits = {60.0f, 100.0f, "Pulse Rate"};
+    VitalLimits spo2Limits = {90.0f, 100.0f, "Oxygen Saturation"};
+
+ public:
+    // Pure function for checking individual vitals
+    VitalStatus checkVital(float value, const VitalLimits& limits) {
+        return checkVitalRange(value, limits.min, limits.max);
+    }
+
+    // Procedural approach for sequence of checks
+    bool checkAllVitals(float temperature, float pulseRate, float spo2) {
+        // Array of vital values and their corresponding limits for loop-based processing
+        struct VitalCheck {
+            float value;
+            const VitalLimits* limits;
+        };
+
+        std::array<VitalCheck, 3> vitalsToCheck = {{
+            {temperature, &temperatureLimits},
+            {pulseRate, &pulseRateLimits},
+            {spo2, &spo2Limits}
+        }};
+
+        // Use std::all_of algorithm for better style
+        return std::all_of(vitalsToCheck.begin(), vitalsToCheck.end(),
+                          [this](const VitalCheck& vital) {
+                              if (checkVital(vital.value, *vital.limits) == VitalStatus::CRITICAL) {
+                                  handleCriticalVital(vital.limits->name);
+                                  return false;
+                              }
+                              return true;
+                          });
+    }
+};
+
+// Legacy function wrapper for backward compatibility
 int vitalsOk(float temperature, float pulseRate, float spo2) {
     VitalMonitor monitor;
     return monitor.checkAllVitals(temperature, pulseRate, spo2) ? 1 : 0;
-}
-
-void setLanguage(Language lang) {
-    LanguageManager::setLanguage(lang);
-}
-
-int main() {
-    std::cout << "=== Modular Vital Monitoring System Test ===" << std::endl;
-    
-    std::cout << "\nTest 1: Normal vitals" << std::endl;
-    std::cout << "Temperature: 98.6°F, Pulse: 75 bpm, SPO2: 95%" << std::endl;
-    std::cout << "Result: " << (vitalsOk(98.6f, 75.0f, 95.0f) ? "OK" : "NOT OK") << std::endl;
-    
-    std::cout << "\nTest 2: Warning conditions (English)" << std::endl;
-    std::cout << "Temperature: 96.0°F (near hypothermia), Pulse: 75 bpm, SPO2: 95%" << std::endl;
-    std::cout << "Result: " << (vitalsOk(96.0f, 75.0f, 95.0f) ? "OK" : "NOT OK") << std::endl;
-    
-    std::cout << "\nTest 3: Critical condition (English)" << std::endl;
-    std::cout << "Temperature: 103°F (critical), Pulse: 75 bpm, SPO2: 95%" << std::endl;
-    std::cout << "Result: " << (vitalsOk(103.0f, 75.0f, 95.0f) ? "OK" : "NOT OK") << std::endl;
-    
-    std::cout << "\n=== Testing German Language Support ===" << std::endl;
-    setLanguage(Language::GERMAN);
-    
-    std::cout << "\nTest 4: Warning condition (German)" << std::endl;
-    std::cout << "Temperature: 96.0°F (near hypothermia), Pulse: 75 bpm, SPO2: 95%" << std::endl;
-    std::cout << "Result: " << (vitalsOk(96.0f, 75.0f, 95.0f) ? "OK" : "NOT OK") << std::endl;
-    
-    std::cout << "\nTest 5: Critical condition (German)" << std::endl;
-    std::cout << "Temperature: 103°F (critical), Pulse: 75 bpm, SPO2: 95%" << std::endl;
-    std::cout << "Result: " << (vitalsOk(103.0f, 75.0f, 95.0f) ? "OK" : "NOT OK") << std::endl;
-    
-    std::cout << "\nTest 6: Pulse warning (German)" << std::endl;
-    std::cout << "Temperature: 98.6°F, Pulse: 61 bpm (near bradycardia), SPO2: 95%" << std::endl;
-    std::cout << "Result: " << (vitalsOk(98.6f, 61.0f, 95.0f) ? "OK" : "NOT OK") << std::endl;
-    
-    return 0;
 }
