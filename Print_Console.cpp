@@ -1,4 +1,4 @@
-#include "./Print_console.h"
+#include "./Print_Console.h"
 #include <chrono>
 #include <iostream>
 #include <string>
@@ -25,3 +25,4 @@ void handleCriticalVital(const std::string& vitalName) {
     displayAlert(vitalName + " is critical!");
     showVisualAlert();
 }
+
