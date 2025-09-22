@@ -1,14 +1,16 @@
-#include "Print_Console.h"
+#include "./Print_console.h"
 #include <chrono>
 #include <iostream>
 #include <string>
 #include <thread>
 using std::cout, std::flush, std::this_thread::sleep_for, std::chrono::seconds;
 
+// Separated I/O concern - pure alert function
 void displayAlert(const std::string& message) {
     cout << message << "\n";
 }
 
+// Separated I/O concern - visual alert animation
 void showVisualAlert() {
     for (int i = 0; i < 6; i++) {
         cout << "\r* " << flush;
@@ -18,7 +20,8 @@ void showVisualAlert() {
     }
 }
 
-void handleCriticalVital(const std::string& message) {
-    displayAlert(message);
+// Aspect-oriented approach: Alert handler that can be reused
+void handleCriticalVital(const std::string& vitalName) {
+    displayAlert(vitalName + " is critical!");
     showVisualAlert();
 }
