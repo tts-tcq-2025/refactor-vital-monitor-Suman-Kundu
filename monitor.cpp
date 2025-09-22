@@ -7,7 +7,7 @@
 #include <iostream>
 #include <string>
 #include <thread>
-#include "./Print_console.h"
+#include "./Print_Console.h"
 
 // Enums for better type safety and readability
 enum class VitalStatus {
@@ -77,3 +77,4 @@ int vitalsOk(float temperature, float pulseRate, float spo2) {
     VitalMonitor monitor;
     return monitor.checkAllVitals(temperature, pulseRate, spo2) ? 1 : 0;
 }
+
